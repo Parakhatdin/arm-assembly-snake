@@ -3,10 +3,11 @@ w_sharp:	.string		"#"
 w_vline:	.string		"|"
 w_gline:	.string		"_"
 w_point:	.string		"."
-w_erase:	.byte		0x7f
+w_erase:	.ascii		"\033[2J"
+w_erase_top:	.ascii		"\033[H"
 w_nl:		.string		"\n"
-snake:	
-		.space		1830
+snake:		.space		1830
+speed:		.dword		0x1ffffffff
 
 		.section	.text
 		.global		main
@@ -16,12 +17,29 @@ snake:
 // ---------------------------------------------
 main:		
 		stp	x29, x30, [sp, #-16]!
+
 		mov	w0, #15
 		mov	w1, #15
 		adr	x2, snake
 		stp	w0, w1, [x2]
 
+fresh:	
+		bl	p_erase
+
+		adr	x0, snake
+		ldr	w1, [x0]
+		add	w1, w1, #1
+		strh	w1, [x0]
 		bl	draw
+
+		adr	x1, speed
+		ldr	x0, [x1]
+fresh_l:
+		cmp	x0, #0
+		beq	fresh
+		sub	x0, x0, #1
+		b	fresh_l
+
 
 main_x:	
 		ldp	x29, x30, [sp], #16
@@ -92,7 +110,6 @@ draw_l2_x:
 		b	draw_l1
 draw_l1_x:	
 draw_x:
-		bl	p_erase
 		ldp	x29, x30, [sp], #16
 		ret
 
@@ -168,20 +185,17 @@ p_nl:
 		svc	0
 		ret
 p_erase:
-		stp	x29, x30, [sp, #-16]!
-		mov	x3, #1830
-p_erase_l:
-		cmp	x3, #0
-		beq	p_erase_l_x
 		mov	x0, #1
 		adr	x1, w_erase
-		mov	x2, #1
+		mov	x2, #4
 		mov	x8, #64
 		svc	0
-		sub	x3, x3, #1
-		b	p_erase_l
-p_erase_l_x:
-p_erase_x:
-		ldp	x29, x30, [sp], #16
+
+		mov	x0, #1
+		adr	x1, w_erase_top
+		mov	x2, #4
+		mov	x8, #64
+		svc	0
+
 		ret
 
